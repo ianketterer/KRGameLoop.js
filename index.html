@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<title>KR Game Loop!</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width" />
+    <script type="text/javascript" src="js/KRGameLoop.js"></script>
+		<script type="text/javascript">
+	        
+
+    /////////////////////////////////////////////////////////////////////////
+    //
+    //  KRGameLoop.js: Template for Usage of KRGameLoop.js
+    // 
+    //    Copyright (C) 2014  Keny Ruyter keny@eastcoastbands.com
+    //
+    //    This program is free software: you can redistribute it and/or modify
+    //    it under the terms of the GNU General Public License as published by
+    //    the Free Software Foundation, either version 3 of the License, or
+    //    any later version.
+    //
+    //    This program is distributed in the hope that it will be useful,
+    //    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    //    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    //    GNU General Public License for more details.
+    //
+    //    You should have received a copy of the GNU General Public License
+    //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    //
+    /////////////////////////////////////////////////////////////////////////
+    
+    // please note this is a work in progress, and a rough draft at best.
+    // With these examples, we establish the KRGameLoop and it's mechanism
+    // Then we go on to manage User Click Input as well as set up a parallax
+    // scroller using the features of the engine. 
+
+    // About the background
+    // The code here was initially created to make a website and now here to 
+    // contribute, the original background graphics were unable to be reused 
+    // in this format so I cranked out a 5 minute scrolling background instead. 
+    // Sorry if it isn't all that graphically pleasing. The character was one
+    // of the original characters from my first iPhone app...
+
+    // Constructive comments to keny@eastcoastbands.com
+
+      // Set Globals, start loading images
+
+      var boat;
+      var selectorBoat;
+
+      // initializes the canvas
+      // called from body - onLoad
+      function load(){
+
+        var canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+
+        canvas.addEventListener("click", onClickCanvas, false);
+
+        gameLoop("start");
+
+        // Note: it is important to remember that with Canvas, pixel ordering starts 0,0 at the top left of the screen.
+
+        // gameLoop(command):
+        // start: Starts Animation
+        // stop: Stops Animation
+        
+        // KRGameLoopGlobals ... 
+        // ...aka dont make any variables named this:
+        // var gSetGameLoop; // selector that initializes game loop
+        // var gGameLoopFrequency = 16; // 16 == 60cps 
+        //  I calculated 16 to equate to about 60 frames a second. YMMV
+        // var gObjectRegistry = [];
+        //  an array that registers all sprite objects created in memory
+        // var dncX; // internal var states do not calculate if longitude isn't going to change
+        // var dncY; // internal var states do not calculate if latitude isn't going to change
+        // var fillBackground = 1; // flag to fill background with color 
+        // currently fixed to black but easily modifried
+
+        // KRGameLoop Functions:
+
+        // centerGraphic(sprite) 
+        // sets a flag to tell the display method to offset the image by 
+        // it's .h and .w values divided by 2, respectively, up and to the left
+
+        // imgIndex(img, w, h)
+        // the purpose of the image index is to give you some method of preloading 
+        // the graphic before actually creating the sprite. Additionally it provides
+        // a data structure where you can set the .h and .w values beforehand so that
+        // you don't need to have the images already loaded before you can calculate 
+        // anything. That way the images appear as the page loads if the connection 
+        // is slow.
+
+        // Sprite(file)
+        // SpriteWithPosition(file, x, y)
+        // establishes a sprite from file at position X and Y
+        // Accessable and configurable properties and default values:
+
+        // sprite.img = file; 
+        // image file of sprite
+        
+        // sprite.x = x; 
+        // x position or 0
+        
+        // sprite.y = y; 
+        // y position or 0
+        
+        // sprite.w = 0; 
+        // width of the image 
+        // must be set for animated or centered objects
+        
+        // sprite.h = 0; 
+        // height of the image 
+        // must be set for animated or centered objects
+        
+        // sprite.v = 1; 
+        // visibility 1: on 0: off
+        
+        // sprite.isMoving = 0; 
+        // set to 0 if you want to stop animation in place
+        
+        // sprite.isCentered = 0; 
+        // tells display to center the image from sprite.x/y
+        // does not modify sprite.x or .y, rather just positions 
+        // the image offset. see also function test() index.html
+        // for succested use of mouse click detection
+
+        // moveSprite(sprite, x, y, duration)
+        // sets a position for the sprite to move over duration
+        // 1 == 1 second trasition.
+
+        // in order todo something like "moveSpriteWithSelector", see 
+        // function gameLoopIntervalAction() in index.html
+
+
+        // Parallax setup (index.html)
+        setUpParallaxBg();
+
+        // Ok Let us make a boat with which to float in our moat...
+
+        // create index, preloading file and size data
+        imgBoat = new imgIndex("graphics/boat.png", 600, 115);
+
+        // create a sprite with image index data and set initial position
+        boat = new SpriteWithPosition(imgBoat.img, canvas.width/10 * 5, canvas.height/10 * 7); 
+
+        // assign sprite object with image dimensions
+        boat.w = imgBoat.w; boat.h = imgBoat.h;
+
+        // in this case, we want the boat to appear centered
+        boat.isCentered = 1;
+
+        // initialize the motion of the boat-ion
+        selectorBoat = setInterval("checkBoat()", 1000);
+      }
+
+      function checkBoat(){
+
+        // access sprite.isMoving to test whether or not...
+        if (boat.isMoving == 0){
+
+          // Move boat back to where it was...
+          boat.x = canvas.width/10 * 5;
+
+          // and now we will move said boat downstream and off canvas...
+          // add a couple pixels so that it can be fully off canvas... YMMV
+          moveSprite(boat, boat.w*-1 +2, boat.y, 20);
+
+          // clearInterval(selectorBoat); // if you only wanted 1 rep...
+        }
+      }
+
+      function boatClicked(){
+
+        // stop the animation. This will cause the game loop to see that the 
+        // animation is stopped BUT, since we did not clear the selector, as soon as
+        // it checks, it will reset the boat to center, and restart the animation.
+
+        boat.isMoving = 0;
+
+        // Man I sould have made a boat sinking algorithm... haahah
+        // clearInterval(selectorBoat); // if you wanted the animation to stop...
+
+      }
+
+      // Handle user click event
+      // Pretty standard method below to get pixel coordinates of click location
+      // important to use like this: notice we check to see if sprite is centered 
+      // and then offset to find bounds
+      //
+      // if object rect contains click point
+      // you would put calls to various routines here, to handle different click events
+      function onClickCanvas(e) {
+          
+          if (test(boat, e) == 1) boatClicked();
+      }
+      
+      // Test a sprite to see if it has, in fact, been clicked 
+      // by comparing mouse event location with sprite coord's
+      function test(sprite, e){
+      
+        // have to test for offset
+        // if so, set test coord's to offset position else just regular type
+        if (sprite.isCentered == 1){
+          testx = sprite.x - sprite.w/2; 
+          testy = sprite.y - sprite.h/2;
+        }
+        else {
+          testx = sprite.x; testy = sprite.y;
+        }
+
+        // returns cursor corrdinates, e being the event tat triggered the routine
+        var coord = getCursorPosition(e);
+         
+          var rangeX = 0;
+          var rangeY = 0;
+          
+          if (coord.x >= testx && coord.x <= testx + sprite.w){
+            rangeX = 1;
+          }
+          if (coord.y >= testy && coord.y <= testy + sprite.w){
+            rangeY = 1;
+          }
+          if (rangeX == 1 && rangeY == 1){
+            return 1;
+          }
+          else return 0;
+      }
+      
+      function getCursorPosition(e) {
+        
+          // returns Cell with .row and .column properties
+          var x;
+          var y;
+          if (e.pageX != undefined && e.pageY != undefined) {
+            x = e.pageX;
+            y = e.pageY;
+          }
+          else {
+           x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+           y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+          }
+
+          // Account for canvas offset
+          x -= canvas.offsetLeft;
+          y -= canvas.offsetTop;
+          
+          coord = new Object(); 
+          coord.x = x;
+          coord.y = y;
+          return coord;
+      }
+
+      // parallax scrolling
+      // Uses KRGameLoop sprites, updates via gameLoop
+
+      // Globals for parallax Scroll
+      var parallaxScroll = 0;
+      imgBgFast = new imgIndex("graphics/bgfast.png", 1133, 414);
+      imgBgFast2 = new imgIndex("graphics/bgfast.png", 1133, 414);
+      imgBgSlowA = new imgIndex("graphics/bgslowa.png", 2046, 286); // I like to reduce this by a couple pixels
+      imgBgSlowB = new imgIndex("graphics/bgslowb.png", 2046, 286);
+
+      function setUpParallaxBg(){
+
+        bgFast = new SpriteWithPosition(imgBgFast.img, 0, canvas.height/10 * 2); // 20% of canvas height
+        bgFast.w = imgBgFast.w; bgFast.h = imgBgFast.h; // assign sprite object with image dimensions
+
+        bgFast2 = new SpriteWithPosition(imgBgFast.img, bgFast.w, canvas.height/10 * 2);
+        bgFast2.w = imgBgFast2.w; bgFast2.h = imgBgFast2.h; // in this case same image looped
+        
+        bgSlowA = new SpriteWithPosition(imgBgSlowA.img, 0, 0); // Top left corner
+        bgSlowA.w = imgBgSlowA.w; bgSlowA.h = imgBgSlowA.h;
+
+        bgSlowB = new SpriteWithPosition(imgBgSlowB.img,  imgBgSlowB.w, 0);
+        bgSlowB.w = imgBgSlowB.w; bgSlowB.h = imgBgSlowB.h; // in tis case two images looped
+
+        // Initialize sprites into action
+         moveSprite(bgFast, - bgFast.w, bgFast.y, 30);
+         moveSprite(bgFast2, - bgFast2.w, bgFast2.y, 60); // must be 2x previous duration
+
+        // Initialize sprites into action
+         moveSprite(bgSlowA, - bgSlowA.w, bgSlowA.y, 120);
+         moveSprite(bgSlowB, - bgSlowB.w, bgSlowB.y, 240); // must be 2x previous duration
+
+      }
+
+      function parallaxSprite(){
+
+          if (bgFast.x <= -bgFast.w){
+            // pop first grapic to end of second graphic
+            bgFast.x = bgFast2.x + bgFast2.w;
+            moveParallax(bgFast);
+          }
+          else if (bgFast2.x <= -bgFast2.w){
+            // pop first grapic to end of second graphic
+            bgFast2.x = bgFast.x + bgFast.w;
+            moveParallax(bgFast2);
+          }
+
+          if (bgSlowA.x <= -bgSlowA.w){
+            // pop first grapic to end of second graphic
+            bgSlowA.x = bgSlowB.x + bgSlowB.w;
+            moveParallaxSlow(bgSlowA);
+          }
+          else if (bgSlowB.x <= -bgSlowB.w){
+            // pop first grapic to end of second graphic
+            bgSlowB.x = bgSlowA.x + bgSlowA.w;
+            moveParallaxSlow(bgSlowB);
+          }
+
+      }
+
+      function moveParallax(sprite){
+        moveSprite(sprite, -sprite.w, sprite.y, 60);
+      }
+      function moveParallaxSlow(sprite){
+        moveSprite(sprite, -sprite.w, sprite.y, 240);
+      }
+			
+      // gameLoopIntervalAction is a function you can call to test during every iteration of the game loop.
+      // use this to test for flags that will determine the exact position in time of where a sprite is etc...
+      function gameLoopIntervalAction(){
+         
+         // in this example we are testing that the parralax bg is at its point and calling an update if so.
+         if(bgFast.isMoving == 0){
+          parallaxSprite();
+         }
+         if(bgFast2.isMoving == 0){
+          parallaxSprite();
+         }
+
+         if(bgSlowA.isMoving == 0){
+          parallaxSprite()
+         }
+         if(bgSlowB.isMoving == 0){
+          parallaxSprite()
+         }
+
+      }
+
+
+
+		</script>
+
+	</head>
+
+	<body bgcolor="#FFFFFF" onLoad="load();">
+	<br>
+		<center>
+
+        <canvas id="canvas" width="900" height="500"></canvas>
+
+
+	</body>
+</html>
